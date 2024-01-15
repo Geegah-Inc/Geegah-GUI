@@ -41,8 +41,13 @@ These consist of classes or functions that support the acquisition and processin
 2. _ok.pyd
 3. xem7305_GG222.bit
 
+# Getting started: Clone the repository 
+```bash
+clone 
+```
 Click on 1) **Code** drop-down menu and click **Download ZIP** 
 ![alt text](https://github.com/Geegah-Inc/Geegah_OK/blob/main/ZIP_download.png)
+
 
    
 
