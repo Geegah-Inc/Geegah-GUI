@@ -180,6 +180,26 @@ xem.EnablePgen(0)
 #code continues#
 ```
 
+**8. Process the images** <br />
+Enter the number of sample frames to acquire for the experiment by changing  the **NUM_IMAGE_SAMPLES** variable. <br />
+If you have enabled the plotting (liveplot = True), a plot window pops up displaying the calculated Magnitude (V) of the signal real time.
+```python
+
+NUM_IMAGE_SAMPLES =  100
+N_ZERO_PAD_IM = len(str(NUM_IMAGE_SAMPLES))
+time_stamp = []
+xem.Open()
+# Select ADC 2 and make sure the fake ADC is not selected
+xem.SelectADC(ADC_TO_USE) #1 for ADC2, 0 for ADC1
+xem.SelectFakeADC(0) #to deselect the fake ADC
+# Disable pattern generator
+xem.EnablePgen(0)
+...
+...
+...
+#code continues#
+```
+
 
 
 
