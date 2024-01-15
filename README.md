@@ -106,7 +106,8 @@ row_max = 127 #integer, 0<row_max<127
 
 num_Frames = 200 #Number of frames to acquire for sample, integer, num_Frames > 0
 ```
-Please ensure the Geegah Imager is powered on and connected to the PC via USB A/C before proceeding. 
+Please ensure the Geegah Imager is powered on and connected to the PC via USB A/C before proceeding.  <br />
+
 **4. Finding and initializing the board**<br />
 The first section of the code sets up the connection with the FPGA board. If the board is not connected, or if the driver is missing, an error message appears. 
 
@@ -141,6 +142,8 @@ geegah_hp.reload_board(xem, frequency)
 ```
 
 Please ensure the chip surface is cleaned properly before running this section.
+
+
 **6. Acquiring baseline frames** <br />
 Enter the number of air frames/baseline frames to acquire for the experiment by changing  **NAIRSAMPLES** variable. 
 
