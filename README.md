@@ -59,7 +59,7 @@ All the scripts have been divided into the following sections:
 2) Creating a directory and sub-folders to save raw and processed images
 3) Changing parameters of interest
 4) Finding and initializing the board
-5) Loading all the settings
+5) Reloading the board after first initialization
 6) Acquiring air frames/background frames
 7) Acquiring main sample frames
 8) Plotting desired acoustic parameters
@@ -106,6 +106,48 @@ row_max = 127 #integer, 0<row_max<127
 
 num_Frames = 200 #Number of frames to acquire for sample, integer, num_Frames > 0
 ```
+Please ensure the Geegah Imager is powered on and connected to the PC via USB A/C before proceeding. 
+**Finding and initializing the board**<br />
+The first section of the code sets up the connection with the FPGA board. If the board is not connected, or if the driver is missing, an error message appears. 
+
+```python
+xem = fpga.fpga()
+board_name = xem.BoardName()
+if board_name != "XEM7305":
+    print("Problem: board name = " + board_name)  
+    sys.exit()
+print("Board: " + xem.di.deviceID + " " + xem.di.serialNumber)
+```
+The second part of the code is loading the DAC in the board, which prepares individual pixels for imaging. It further loads other timing and pulse settings as well. <br /> 
+You do not have to change anything here. You also only need to run this section once, as it takes approximately 30 seconds - 1.5 minutes to load all the pixels (128 x 128) <br />
+Re-run this if you restarted the console or the board connection was interrupted mid-acquisition. 
+
+```python
+#bit file to use (before DAC changes)
+bit_file_name = "xem7305.bit"
+xem.Configure(bit_file_name) # use older bit file
+print("Version: " + xem.Version() + " serial number " + str(xem.SerialNumber()))
+print("Sys clock = %8.4f MHz" % xem.SysclkMHz())
+...
+...
+...
+#code continues#
+```
+**Reloading the board after first initialization** <br />
+This function can be run to re-initialize the board once the FPGA setup code has already been run.
+
+```python
+geegah_hp.reload_board(xem, frequency)
+```
+
+
+
+
+
+
+
+
+
 
 **Contact**
 Anuj Baskota
