@@ -33,7 +33,7 @@ These consist of classes or functions that support the acquisition and processin
 
 1. **fpga.py** Helper functions for opal-kelly FPGA pin assignments, settings loading, and acquisition parameters setup.
 2. **ok.py** Opal Kelly specific functions
-3. **Geegah_hf.py** Helper functions for image acquisition and post-processing
+3. **geegah_hf.py** Helper functions for image acquisition and post-processing
 
 # Other files for driver support (included)
 
@@ -41,12 +41,75 @@ These consist of classes or functions that support the acquisition and processin
 2. _ok.pyd
 3. xem7305_GG222.bit
 
-# Getting started: Clone the repository 
+# Getting started: 
+
+**Clone the repository**
 ```bash
-clone 
+git clone git@github.com:Geegah-Inc/Geegah_OK.git
 ```
+
+**Or, directly download the zip**
 Click on 1) **Code** drop-down menu and click **Download ZIP** 
 ![alt text](https://github.com/Geegah-Inc/Geegah_OK/blob/main/ZIP_download.png)
+
+**Usage Example**
+All the scripts have been divided into the following sections:
+
+1) Importing modules
+2) Creating a directory and sub-folders to save raw and processed images
+3) Changing parameters of interest
+4) Finding and initializing the board
+5) Loading all the settings
+6) Acquiring air frames/background frames
+7) Acquiring main sample frames
+8) Plotting desired acoustic parameters
+9) Relevant Post-processing
+
+**Importing Modules**<br />
+You simply have to run this once to load the necessary helper functions and Python libraries
+```python
+import fpga 
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+import geegah_hp
+import time
+import cv2 #optional for video generation
+import os
+```
+
+**Directory assignment** <br />
+Change the **foldernam**e to represent the main folder where all the sub-folders will be created, and the raw data files will be saved. <br />
+Select the **savedirname** as the filepath where the **foldername** will be created
+
+```python
+foldername = "SampleExperiment1"
+savedirname = os.path.join("C:/Users/ab2297/Downloads", foldername, "")
+
+if not os.path.exists(savedirname):
+    os.makedirs(savedirname)
+```
+
+**Changing parameters of interest**<br />
+This is the section where you need to assign correct values to the parameter that you might want to change for the acquisition
+
+```python
+liveplot = True #boolean for plotting images real-time, True or False
+frequency = 1853.0 #Pulse frequency in MHz, with resolution of 0.1 MHz
+
+#Selection of firing/receiving pixels, ROI 
+
+col_min = 0 #integer, 0<col_min<127
+col_max = 127 #integer, 0<col_max<127
+row_min = 0 #integer, 0<row_min<127
+row_max = 127 #integer, 0<row_max<127
+
+num_Frames = 200 #Number of frames to acquire for sample, integer, num_Frames > 0
+```
+
+**Contact**
+Anuj Baskota
+anuj@geegah.com
 
 
    
