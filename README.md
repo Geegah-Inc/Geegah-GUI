@@ -65,7 +65,7 @@ All the scripts have been divided into the following sections:
 8) Plotting desired acoustic parameters
 9) Relevant Post-processing
 
-**Importing Modules**<br />
+**1. Importing Modules**<br />
 You simply have to run this once to load the necessary helper functions and Python libraries
 ```python
 import fpga 
@@ -78,7 +78,7 @@ import cv2 #optional for video generation
 import os
 ```
 
-**Directory assignment** <br />
+**2. Directory assignment** <br />
 Change the **foldernam**e to represent the main folder where all the sub-folders will be created, and the raw data files will be saved. <br />
 Select the **savedirname** as the filepath where the **foldername** will be created
 
@@ -90,7 +90,7 @@ if not os.path.exists(savedirname):
     os.makedirs(savedirname)
 ```
 
-**Changing parameters of interest**<br />
+**3. Changing parameters of interest**<br />
 This is the section where you need to assign correct values to the parameter that you might want to change for the acquisition
 
 ```python
@@ -107,7 +107,7 @@ row_max = 127 #integer, 0<row_max<127
 num_Frames = 200 #Number of frames to acquire for sample, integer, num_Frames > 0
 ```
 Please ensure the Geegah Imager is powered on and connected to the PC via USB A/C before proceeding. 
-**Finding and initializing the board**<br />
+**4. Finding and initializing the board**<br />
 The first section of the code sets up the connection with the FPGA board. If the board is not connected, or if the driver is missing, an error message appears. 
 
 ```python
@@ -133,17 +133,49 @@ print("Sys clock = %8.4f MHz" % xem.SysclkMHz())
 ...
 #code continues#
 ```
-**Reloading the board after first initialization** <br />
+**5. Reloading the board after first initialization** <br />
 This function can be run to re-initialize the board once the FPGA setup code has already been run.
 
 ```python
 geegah_hp.reload_board(xem, frequency)
 ```
 
+Please ensure the chip surface is cleaned properly before running this section.
+**6. Acquiring baseline frames** <br />
+Enter the number of air frames/baseline frames to acquire for the experiment by changing  **NAIRSAMPLES** variable. 
 
+```python
+NAIRSAMPLES = 10
+N_ZERO_PAD = len(str(NAIRSAMPLES))
+myt_E = time.time()
 
+xem.Open()
+# Select ADC 2 and make sure the fake ADC is not selected
+xem.SelectADC(ADC_TO_USE) #1 for ADC2, 0 for ADC1
+...
+...
+...
+#code continues#
+```
+**7. Acquiring sample frames** <br />
+Enter the number of sample frames to acquire for the experiment by changing  the **NUM_IMAGE_SAMPLES** variable. <br />
+If you have enabled the plotting (liveplot = True), a plot window pops up displaying the calculated Magnitude (V) of the signal real time.
+```python
 
-
+NUM_IMAGE_SAMPLES =  100
+N_ZERO_PAD_IM = len(str(NUM_IMAGE_SAMPLES))
+time_stamp = []
+xem.Open()
+# Select ADC 2 and make sure the fake ADC is not selected
+xem.SelectADC(ADC_TO_USE) #1 for ADC2, 0 for ADC1
+xem.SelectFakeADC(0) #to deselect the fake ADC
+# Disable pattern generator
+xem.EnablePgen(0)
+...
+...
+...
+#code continues#
+```
 
 
 
