@@ -3,6 +3,13 @@
 # Introduction
 This repository contains Python scripts for image acquisition and processing using the Geegah ultrasonic imager with Opal Kelly XEM 7503 FPGA processor. The Geegah Imager consists of a 128 x 128 or 256 x 256 array of transducers that transmit and receive high-frequency ultrasonic waves. Different scripts are tailored to enable single/multi-frequency measurements, controlling individual pixels or regions of interest (ROI), as well as acquiring the whole transmit/receive pulses with multiple echoes. Additionally, scripts are provided to generate images from the raw ".dat" files and further compute the acoustic parameters of the acquired data. 
 
+# Features
+These scripts allow users to control the following features of the GHz ultrasonic transducers.
+1. Real-time visualization of images
+2. Frequency sweep
+3. Selection of any region of interest (ROI) from 1 pixel to 128 x 128 pixels.
+4. Obtaining a full pulse-echo response from each transducer (A-scan)
+
 # Prerequisites
 Before you use any of the acquisition of post-processing scripts, ensure you have the following on your computer:
 1. Python 3. x installed
