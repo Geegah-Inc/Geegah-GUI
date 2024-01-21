@@ -182,6 +182,7 @@ xem.EnablePgen(0)
 
 **8. Process the images** <br />
 Enter the details for loading previously saved data: Foldername, Path to saved data, ROI col/rows min/max values, # of airframes, and # of sample frames <br />
+This will load all the echo/no-echo, I and Q values for Baseline and Sample frames and place them in their respective arrays. It will then compute the arrays for Magnitude, Phase, Reflection coefficient, and Acoustic Impedance.
 ```python
 
 foldername_PP = "SampleExperiment4"
