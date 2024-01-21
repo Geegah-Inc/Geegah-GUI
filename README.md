@@ -181,25 +181,45 @@ xem.EnablePgen(0)
 ```
 
 **8. Process the images** <br />
-Enter the number of sample frames to acquire for the experiment by changing  the **NUM_IMAGE_SAMPLES** variable. <br />
-If you have enabled the plotting (liveplot = True), a plot window pops up displaying the calculated Magnitude (V) of the signal real time.
+Enter the details for loading previously saved data: Foldername, Path to saved data, ROI col/rows min/max values, # of airframes, and # of sample frames <br />
 ```python
 
-NUM_IMAGE_SAMPLES =  100
-N_ZERO_PAD_IM = len(str(NUM_IMAGE_SAMPLES))
-time_stamp = []
-xem.Open()
-# Select ADC 2 and make sure the fake ADC is not selected
-xem.SelectADC(ADC_TO_USE) #1 for ADC2, 0 for ADC1
-xem.SelectFakeADC(0) #to deselect the fake ADC
-# Disable pattern generator
-xem.EnablePgen(0)
+foldername_PP = "SampleExperiment4"
+path_PP = "C:/Users/anujb/Downloads"
+savedirname_PP = os.path.join(path, foldername, "")
+BLE_save_dir = savedirname_PP+'rawdata_baseline_echo/'
+BLNE_save_dir = savedirname_PP+'rawdata_baseline_no_echo/'
+rawdata_save_dir = savedirname_PP+'rawdata_echo/'
+rawdata_ne_save_dir = savedirname_PP+'rawdata_no_echo/'
+#Selection of firing/receiving pixels, ROI
+#THIS MUST MATCH WITH THE SAME VARIABLES THAT WERE USED DURING ACQUISITION
+col_min = 0 #integer, 0<col_min<127
+col_max = 127  #integer, 0<col_max<127
+row_min = 0 #integer, 0<row_min<127
+row_max = 127 #integer, 0<row_max<127
+
+roi_param = [col_min, col_max, row_min, row_max]
+num_AIR_Frames = 1 #Number of air/baseline frames to consider during computation
+num_SAMPLE_Frames = 20 #Number of frames to measured sample frames
+
+I_A_E, Q_A_E, I_A_NE, Q_A_NE = [],[],[],[]
+I_S_E, Q_S_E, I_S_NE, Q_S_NE = [],[],[],[]
 ...
 ...
 ...
 #code continues#
 ```
+**9. Plotting** <br />
+Change the variable **LIST_TO_PLOT** to the array of the acoustic parameter you want to plot. **Parameter** is just the parameter name. <br />
+Running this section will create a new folder named **Parameter** in your directory and save the ".png" of the frames. It will also generate a video of these images.
 
+```python
+LIST_to_PLOT = ACOUSTIC_IMP
+Parameter = "Acoustic Impedance"
+geegah_hp.imgvid_plot_IMG(LIST_to_PLOT,savedirname_PP, 
+                          foldername = Parameter,
+                          vmin = 0.6,vmax = 3)
+```
 
 
 
