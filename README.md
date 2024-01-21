@@ -83,28 +83,31 @@ Change the **foldernam**e to represent the main folder where all the sub-folders
 Select the **savedirname** as the filepath where the **foldername** will be created
 
 ```python
-foldername = "SampleExperiment1"
-savedirname = os.path.join("C:/Users/ab2297/Downloads", foldername, "")
+foldername = "SampleExperiment4"
+path = "C:/Users/anujb/Downloads"
 
-if not os.path.exists(savedirname):
-    os.makedirs(savedirname)
+savedirname = os.path.join(path, foldername, "")
 ```
 
 **3. Changing parameters of interest**<br />
 This is the section where you need to assign correct values to the parameter that you might want to change for the acquisition
 
 ```python
+
 liveplot = True #boolean for plotting images real-time, True or False
-frequency = 1853.0 #Pulse frequency in MHz, with resolution of 0.1 MHz
+frequency = 1853.5 #Pulse frequency in MHz, with resolution of 0.1 MHz
 
 #Selection of firing/receiving pixels, ROI 
-
 col_min = 0 #integer, 0<col_min<127
 col_max = 127 #integer, 0<col_max<127
 row_min = 0 #integer, 0<row_min<127
 row_max = 127 #integer, 0<row_max<127
 
-num_Frames = 200 #Number of frames to acquire for sample, integer, num_Frames > 0
+row_no = row_max - row_min
+col_no = col_max - col_min
+roi_param = [col_min, col_max, row_min, row_max]
+num_Frames = 100 #Number of frames to acquire for sample, integer, num_Frames > 0
+
 ```
 Please ensure the Geegah Imager is powered on and connected to the PC via USB A/C before proceeding.  <br />
 
@@ -138,7 +141,7 @@ print("Sys clock = %8.4f MHz" % xem.SysclkMHz())
 This function can be run to re-initialize the board once the FPGA setup code has already been run.
 
 ```python
-geegah_hp.reload_board(xem, frequency)
+geegah_hp.reload_board(xem, frequency, roi_param)
 ```
 
 Please ensure the chip surface is cleaned properly before running this section.
@@ -150,11 +153,13 @@ Enter the number of air frames/baseline frames to acquire for the experiment by 
 ```python
 NAIRSAMPLES = 10
 N_ZERO_PAD = len(str(NAIRSAMPLES))
-myt_E = time.time()
+i_time = time.time()
 
-xem.Open()
-# Select ADC 2 and make sure the fake ADC is not selected
-xem.SelectADC(ADC_TO_USE) #1 for ADC2, 0 for ADC1
+for mycount in range(NAIRSAMPLES):
+   
+    geegah_hp.configTiming(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
+    
+    air_baseline_echo_filename = BLE_save_dir + "DATA"+str(mycount).zfill(N_ZERO_PAD)+".dat"
 ...
 ...
 ...
@@ -165,18 +170,16 @@ Enter the number of sample frames to acquire for the experiment by changing  the
 If you have enabled the plotting (liveplot = True), a plot window pops up displaying the calculated Magnitude (V) of the signal real time.
 ```python
 
-NUM_IMAGE_SAMPLES =  100
+NUM_IMAGE_SAMPLES =  20
 N_ZERO_PAD_IM = len(str(NUM_IMAGE_SAMPLES))
 time_stamp = []
-xem.Open()
-# Select ADC 2 and make sure the fake ADC is not selected
-xem.SelectADC(ADC_TO_USE) #1 for ADC2, 0 for ADC1
-xem.SelectFakeADC(0) #to deselect the fake ADC
-# Disable pattern generator
-xem.EnablePgen(0)
 ...
 ...
 ...
+#extract AIR frames for LIVE PLOTTING if liveplot == True
+...
+...
+#LOOP FOR MAIN SAMPLE FRAMES ACQUISITION
 #code continues#
 ```
 
