@@ -228,7 +228,8 @@ geegah_hp.imgvid_plot_IMG(LIST_to_PLOT,savedirname_PP,
 
 
 
-**Contact**
+# Contact
+
 Anuj Baskota
 anuj@geegah.com
 
