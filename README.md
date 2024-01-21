@@ -25,7 +25,7 @@ The following scripts all allow for data acquisition using the Opal Kelly Imager
 
 1. **Geegah_OK_Imaging.py**: Acquisition of N number of frames with an option to visualize them in real time. It also allows the user to select the operating pixels from 1 x 1 to 128 x 128 or 256 x 256 (for MEG4). This operates at a fixed frequency and echo acquisition timing.
 2. **Geegah_OK_FrequencySweep.py**: Acquisition of images at a range of frequencies (1.5 - 2.0 GHz, with a step as low as 0.01 MHz). Allows capturing N frames (128 x 128 or smaller ROIs) at a fixed acquisition echo timing. 
-3. **Geegah_OK_SampleHold.py** [A-scan]: Acquisition of images at different echo timing to obtain pulse vs timing data at 5 ns temporal resolution. Allows N frames acquisition at a fixed frequency.
+
 
 
 # Helper libraries
