@@ -4,32 +4,9 @@ Created on Tue Apr 13 20:59:26 2021
 
 @author: Justin
 """
-import master_function as mf
-import matplotlib.patches as mpatches
-import time
 
 
-#generate N frames into video from saved images
-def genFrameVidFromImg(num_frames_to_image,start_frame,stop_frame,fps,img_save_dir,vid_save_dir):
-    import cv2
-    img_array = []
-
-    for count3 in range(start_frame,stop_frame):
-        imgname = img_save_dir + "frame"+str(count3)+".png"
-        
-        img = cv2.imread(imgname)
-        height, width, layers = img.shape
-        size = (width,height)
-        img_array.append(img)
-        print("Done frame number: " + str(count3))
-    
-    
-    vid_file_name = vid_save_dir + 'video.avi'
-    out = cv2.VideoWriter(vid_file_name,cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
-     
-    for i in range(len(img_array)):
-        out.write(img_array[i])
-    out.release()
+#ACQUISITION FUNCTIONS
 
 def acqSingleFrameROI(xem, ADCNUM, file_name, c1 = 0, c2 = 127, c3 = 0, c4 = 127):
     import math
@@ -41,6 +18,7 @@ def acqSingleFrameROI(xem, ADCNUM, file_name, c1 = 0, c2 = 127, c3 = 0, c4 = 127
     xem.ResetFifo()
     xem.EnablePipeTransfer(1)
     xem.StartAcq()
+    
     # Set the array size to match the data, but make it a multiple of 1024
     nbytes = ((c2 - c1 + 1) * (c4 - c3 + 1))*2*2
     nbytes = 1024 * math.ceil(nbytes/1024)
@@ -56,8 +34,7 @@ def acqSingleFrameROI(xem, ADCNUM, file_name, c1 = 0, c2 = 127, c3 = 0, c4 = 127
     return byte_data
 
 
-
-
+#SETTINGS FUNCTIONS
 
 def reload_board(xem, frequency, roi_param):
     xem.Open()
@@ -67,6 +44,12 @@ def reload_board(xem, frequency, roi_param):
     xem.SetROI(roi_param[0],roi_param[1],roi_param[2],roi_param[3])
     configureVCO(xem,freq,OUTEN,PSET)
     xem.Close()
+
+
+
+
+
+
 
 
 
@@ -138,19 +121,7 @@ def loadSavedRawDataROI(file_name, c1 = 0, c2 = 128, r1 = 0, r2 = 128):
     return I_IMAGE_ADC, Q_IMAGE_ADC, I_IMAGE_VOLTS, Q_IMAGE_VOLTS
 
     
-#%%
-def reload(xem,frequency):
-    xem.Open()
-    #setup vco
-    #frequency in MHz with resolution of 0.1MHz
-    freq = frequency
-    OUTEN = 1 #0 toisable, 1 to enable
-    PSET =3 #RF power setting
-    
-    #configure VCO
-    # Set number of ADC averages to 1
-    configureVCO(xem,freq,OUTEN,PSET)
-    xem.Close()
+
 
 
 
@@ -233,6 +204,12 @@ def configureVCO_10khz(xem,freq,OUTEN,PSET):
     #configure VCO registers on FPGA
     setXEMVCORegs(xem, R0, R1, R2, R3, R4, R5)
     
+def configureVCO_10khz_fsweep(xem,freq,OUTEN,PSET):
+    xem.Open()
+    R0, R1, R2, R3, R4, R5 = calc_vco_reg_values_10khz(freq,OUTEN,PSET)
+    #configure VCO registers on FPGA
+    setXEMVCORegs(xem, R0, R1, R2, R3, R4, R5)
+    xem.Close()
 #convert raw ADC data to bit-shift corrected ADC data and convert to voltage
 def convertADCToVolts(I_IMAGE, Q_IMAGE):
     I_IMAGE_ADC = I_IMAGE/16 #correct bit shift
@@ -482,3 +459,72 @@ def imgvid_plot_IMG(matrix_list, directory, foldername,
     out.release()
     print("Done generating images and video from frames")
   
+
+def imgvid_plot_fsweep(matrix_list, directory, foldername, 
+             start_freq = 1600, end_freq = 2000,
+             step_freq = 1,
+             vmin = 0.1, vmax = 5):
+    
+    import matplotlib.pyplot as plt
+    import math
+    import os
+    import cv2
+    import numpy as np
+    """this function allows user to generate images, and video
+    directly from the main matrices lists.
+    matrix_list: List containing n number of 128x128 frames. 
+    directory: file path for saving these images
+    foldername: A new folder of this string will be created in 
+        the directory. This foldername string will also appear in
+        the title
+    start_freq = start frequency: appears in the title
+    end_freq = end frequency
+    step_frequency = the difference between two consecutive frequencies
+        in the frequency sweep, also known as f_delta
+    vmin = lower value for the colorbar of the images
+    vmax = upper value for the colorbar of the images
+    
+    """
+    fig, ax = plt.subplots(figsize=(9, 9))
+    savedirec = directory+foldername + '/'
+    if not os.path.exists(savedirec):
+        os.makedirs(savedirec)
+   
+    fps = 7
+    img_array = []
+    frames_num = len(matrix_list[0])
+    for myf in range(start_freq*100,end_freq*100,math.floor(step_freq*100)):
+        f_counter = 0
+        freq_title = np.round(myf/100,2)
+        freq_folder = savedirec+'_FREQ_'+str(myf)+'/'
+        if not os.path.exists(freq_folder):
+            os.makedirs(freq_folder)
+        
+        for jj in range(frames_num):
+            ax.cla()
+            out = matrix_list[f_counter][jj]
+    
+            pos = ax.imshow(out, vmin=vmin, vmax=vmax, cmap = 'cividis', interpolation = 'bilinear')
+            ax.set_title(foldername +" : Frequency="+str(freq_title)+'MHz, Frame ='+str(jj))
+            ax.set_xlabel("Columns")
+            ax.set_ylabel("Rows")
+            cbar = fig.colorbar(pos)
+    
+            plt.pause(0.01)
+            img_name = freq_folder+'/'+'freq'+str(freq_title)+'MHz_Frame '+str(jj)+'.png'
+            fig.savefig(img_name)
+            img = cv2.imread(img_name)
+            height, width, layers = img.shape
+            size = (width,height)
+            img_array.append(img)
+            cbar.remove()
+        vid_file_name = freq_folder+"VID_"+str(myf)+'MHz'+'.avi'
+        out = cv2.VideoWriter(vid_file_name,cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
+        for i in range(len(img_array)):
+            out.write(img_array[i])
+        out.release()
+        f_counter = f_counter+1
+
+        freq_title = freq_title + step_freq    
+    print("Done generating images and video from frames")
+

@@ -14,7 +14,7 @@ import time
 import os
 
 #%% Make directories  to save files in
-foldername = "SampleExperiment4"
+foldername = "OIL_ALC"
 path = "C:/Users/anujb/Downloads"
 
 savedirname = os.path.join(path, foldername, "")
@@ -73,7 +73,7 @@ row_max = 127 #integer, 0<row_max<127
 row_no = row_max - row_min
 col_no = col_max - col_min
 roi_param = [col_min, col_max, row_min, row_max]
-num_Frames = 100 #Number of frames to acquire for sample, integer, num_Frames > 0
+num_Frames = 20 #Number of frames to acquire for sample, integer, num_Frames > 0
 
 #%% FPGA setup 
 #YOU ONLY HAVE TO RUN THIS ONCE AT THE BEGINING OF RUNNING THIS SCRIPT
@@ -105,10 +105,6 @@ geegah_hp.configureVCO(xem,freq,OUTEN,PSET)
 term_count = 83
 
 #ROI setting######################################
-#this is the start and the end rows and column numbers
-xem.SinglePixelMode(False)
-
-
 xem.SetROI(col_min,col_max,row_min,row_max)
 col_min = xem.GetRegField(xem.roi_start_col)
 col_max = xem.GetRegField(xem.roi_end_col)
@@ -128,7 +124,7 @@ ADC_CAP_SETTINGS = (0, 80, 81, 80, 81)   # ADC_CAPTURE #80 81
 #geegah_hp.configTiming(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
 
 #terminal count Noecho
-NE_del = 60
+NE_del = 90
 term_count_NE = 83+NE_del
 
 #TIME SETTINGS FOR NO ECHO
@@ -169,6 +165,12 @@ NAIRSAMPLES = 1
 N_ZERO_PAD = len(str(NAIRSAMPLES))
 i_time = time.time()
 
+xem.Open()
+xem.SelectADC(0)
+xem.SelectFakeADC(0)
+xem.EnablePgen(0)
+xem.Close()
+
 for mycount in range(NAIRSAMPLES):
    
     geegah_hp.configTiming(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
@@ -204,9 +206,13 @@ print("Done acquiring multiple baselines over echo and no echo")
 #do real time imaging #ECHO AND NO-ECHO for your sample
 NUM_IMAGE_SAMPLES =  20
 N_ZERO_PAD_IM = len(str(NUM_IMAGE_SAMPLES))
-time_stamp = []
-#extract air echo magnitude, average of N frames acquired for AIR
 
+#extract air echo magnitude, average of N frames acquired for AIR
+xem.Open()
+xem.SelectADC(0)
+xem.SelectFakeADC(0)
+xem.EnablePgen(0)
+xem.Close()
 if liveplot == True:
     MAG_AIR = []
     for mycount in range(NAIRSAMPLES):
@@ -222,7 +228,7 @@ if liveplot == True:
     base_title = 'Real-time Magnitude (V): '
     # Initialize the plot with the first image
     initial_image = MAG_AIR_AV-MAG_AIR_MAT
-    pos201 = ax2.imshow(initial_image , vmin=-0.05, vmax=0.05)
+    pos201 = ax2.imshow(initial_image , vmin=-0.05, vmax=0.05, cmap = 'ocean')
     fig2.colorbar(pos201)
     # Draw the plot initially to cache the renderer
     plt.show(block=False)
@@ -261,7 +267,7 @@ for mycount in range(NUM_IMAGE_SAMPLES):
         #Update the plot title
         mytitle.set_text(base_title + str(mycount) + ' of ' + str(NUM_IMAGE_SAMPLES - 1))
         # Update the image data
-        sub_image = np.flipud(np.rot90(MAG_SAMP - MAG_AIR_AV, 1))
+        sub_image = np.flipud(np.rot90(MAG_SAMP-MAG_AIR_AV, 1))
         pos201.set_data(sub_image)
         
         # Efficiently update and redraw only the necessary parts
@@ -280,9 +286,9 @@ print('fps = '+str(NUM_IMAGE_SAMPLES/total_time))
 #%%###############################################################%%
 #POST-PROCESSING SECTION
 #LOADING FRAMES
-foldername_PP = "SampleExperiment4"
+foldername_PP = "OIL_ALC"
 path_PP = "C:/Users/anujb/Downloads"
-savedirname_PP = os.path.join(path, foldername, "")
+savedirname_PP = os.path.join(path_PP, foldername_PP, "")
 BLE_save_dir = savedirname_PP+'rawdata_baseline_echo/'
 BLNE_save_dir = savedirname_PP+'rawdata_baseline_no_echo/'
 rawdata_save_dir = savedirname_PP+'rawdata_echo/'
@@ -290,9 +296,9 @@ rawdata_ne_save_dir = savedirname_PP+'rawdata_no_echo/'
 #Selection of firing/receiving pixels, ROI
 #THIS MUST MATCH WITH THE SAME VARIABLES THAT WERE USED DURING ACQUISITION
 col_min = 0 #integer, 0<col_min<127
-col_max = 127  #integer, 0<col_max<127
+col_max = 64  #integer, 0<col_max<127
 row_min = 0 #integer, 0<row_min<127
-row_max = 127 #integer, 0<row_max<127
+row_max = 64 #integer, 0<row_max<127
 
 roi_param = [col_min, col_max, row_min, row_max]
 num_AIR_Frames = 1 #Number of air/baseline frames to consider during computation
@@ -358,16 +364,19 @@ I_S_E, Q_S_E, I_S_NE, Q_S_NE = np.array(I_S_E),np.array(Q_S_E),np.array(I_S_NE),
 
 #COMPUTING MAGNITUDE, PHASE, REFLECTION COEFFICIENT, and ACOUSTIC IMPEDANCE
 
-MAG_AIR =  np.abs((I_A_E[-1] - I_A_NE[-1]) + 1j * (Q_A_E[-1] - Q_A_NE[-1]))
-PHASE_AIR = np.angle((I_A_E[-1] - I_A_NE[-1]) + 1j * (Q_A_E[-1] - Q_A_NE[-1]))
+MAG_AIR = np.sqrt(np.square(I_A_E - I_A_NE)+np.square(Q_A_E - Q_A_NE))
+PHASE_AIR = np.arctan2(I_A_E-I_A_NE, Q_A_E-Q_A_NE)
+
+
 
 MAG_SAMPLE = []
 PHASE_SAMPLE = []
 RCOEF = []
 
 for frame in range(num_SAMPLE_Frames):
-    MAG = np.abs((I_S_E[frame] - I_S_NE[frame]) + 1j * (Q_S_E[frame] - Q_S_NE[frame]))
-    PHASE = np.angle((I_S_E[frame] - I_S_NE[frame]) + 1j * (Q_S_E[frame] - Q_S_NE[frame]))
+    MAG = np.sqrt(np.square(I_S_E[frame] - I_S_NE[frame])+np.square(Q_S_E[frame] - Q_S_NE[frame]))
+    PHASE = np.arctan2(I_S_E[frame]-I_S_NE[frame], Q_S_E[frame]-Q_S_NE[frame])
+   
     MAG_SAMPLE.append(MAG)
     PHASE_SAMPLE.append(PHASE)
     RCOEF.append(MAG/MAG_AIR)
@@ -380,13 +389,12 @@ REFLECTION_COEFFICIENT = np.array(MAG_SAMPLE)/MAG_AIR
 
 ACOUSTIC_IMP = [geegah_hp.impedance_si(jj, array = True) for jj in REFLECTION_COEFFICIENT]
 
-
 #%%
-LIST_to_PLOT = ACOUSTIC_IMP
+LIST_to_PLOT = PHASE_ADJ
 Parameter = "Acoustic Impedance"
 geegah_hp.imgvid_plot_IMG(LIST_to_PLOT,savedirname_PP, 
                           foldername = Parameter,
-                          vmin = 0.6,vmax = 3)
+                          vmin = -0.1,vmax = 0.1)
     
     
 

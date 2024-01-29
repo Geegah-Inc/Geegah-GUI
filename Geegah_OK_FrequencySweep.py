@@ -12,14 +12,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import geegah_hp
 import time
-import cv2 #need to install opencv for this
 import os
 import math
 
 #%% Make directories  to save files in
 #top directory where files will be stored
  #change this to whatever you want your directory name to be
-savedirname = "C:/Users/anujb/Downloads/fsweeptest2/"
+savedirname = "C:/Users/anujb/Downloads/Drop_0_5muL_alcmixed/"
 
 if not os.path.exists(savedirname):
     os.makedirs(savedirname)
@@ -53,16 +52,15 @@ print("Done Setting Up Folders")
 
 #Frequency sweep start, end, and delta
 #Frequencies in MHz
-f_start = 1840
-f_end = 1841
-f_delta = 0.5 #can be as low as 0.01
-num_frames =  20#CHANGE THIS TO ACQUIRE MULTIPLE FRAMES at the same frequency. 
-
+f_start = 1820
+f_end = 1880
+f_delta = 1 #can be as low as 0.01
+num_frames =  30 #CHANGE THIS TO ACQUIRE MULTIPLE FRAMES at the same frequency. 
 #Selection of firing/receiving pixels, ROI 
 col_min = 0 #integer, 0<col_min<127
-col_max = 64 #integer, 0<col_max<127
-row_min = 0 #integer, 0<row_min<127
-row_max = 64 #integer, 0<row_max<127
+col_max = 15 #integer, 0<col_max<127
+row_min = 0#integer, 0<row_min<127
+row_max = 15 #integer, 0<row_max<127
 row_no = row_max - row_min
 col_no = col_max - col_min
 roi_param = [col_min, col_max, row_min, row_max]
@@ -156,6 +154,11 @@ print("Done initializing FPGA")
 geegah_hp.reload_board(xem, f_start, roi_param)
 #%%ACQUIRE BASELINE FRAMES FOR DIFFERENCE FREQUENCIES:
 
+xem.Open()
+xem.SelectADC(0)
+xem.SelectFakeADC(0)
+xem.EnablePgen(0)
+xem.Close()
 for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
     
     f_to_use = myf/100
@@ -190,6 +193,13 @@ print("Done Sweeping Baseline Frequencies, echo and no-echo")
 #change the num_frame to the number of frame you want to acquire.
 #The code will acquire multiple frequencies at 1 frame before moving on to the next frame. 
 
+
+time_i = time.time()
+xem.Open()
+xem.SelectADC(0)
+xem.SelectFakeADC(0)
+xem.EnablePgen(0)
+xem.Close()
 for cf in range(num_frames):
     for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
   
@@ -215,9 +225,10 @@ for cf in range(num_frames):
         
         
         
-        print("Currently at frequency: ", myf, " MHz", "frame ", cf)
+        #print("Currently at frequency: ", myf, " MHz", "frame ", cf)
     print("Finished frame # ", cf)
-
+time_f = time.time()
+total_frames = num_frames*((f_end-f_start)/f_delta)
 xem.Close()
 print("Done Sweeping DATA")
 
@@ -228,15 +239,15 @@ print("Done Sweeping DATA")
 savedirname = savedirname 
 #Frequency sweep start, end, and delta
 #Frequencies in MHz
-f_start = 1840
-f_end = 1841
-f_delta = 0.5 #can be as low as 0.01
-num_frames =  20#CHANGE THIS TO ACQUIRE MULTIPLE FRAMES at the same frequency. 
+f_start = 1820
+f_end = 1880
+f_delta = 1 #can be as low as 0.01
+num_frames =  100#CHANGE THIS TO ACQUIRE MULTIPLE FRAMES at the same frequency. 
 #Selection of firing/receiving pixels, ROI 
 col_min = 0 #integer, 0<col_min<127
-col_max = 64 #integer, 0<col_max<127
+col_max = 15 #integer, 0<col_max<127
 row_min = 0 #integer, 0<row_min<127
-row_max = 64 #integer, 0<row_max<127
+row_max = 15 #integer, 0<row_max<127
 row_no = row_max - row_min
 col_no = col_max - col_min
 roi_param = [col_min, col_max, row_min, row_max]
@@ -267,8 +278,9 @@ for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
     I_A_NE.append(I_VOLTS_ANE)
     Q_A_NE.append(Q_VOLTS_ANE)
     
-    MAG_AIR =  np.abs((I_VOLTS_AE - I_VOLTS_ANE) + 1j * (Q_VOLTS_AE - Q_VOLTS_ANE))
-    PHASE_AIR = np.angle((I_VOLTS_AE - I_VOLTS_ANE) + 1j * (Q_VOLTS_AE - Q_VOLTS_ANE))
+    MAG_AIR = np.sqrt(np.square(I_A_E - I_A_NE)+np.square(Q_A_E - Q_A_NE))
+    PHASE_AIR = np.arctan2(I_A_E-I_A_NE, Q_A_E-Q_A_NE)
+
     MAG_A.append(MAG_AIR)
     PHASE_A.append(PHASE_AIR)
 
@@ -316,8 +328,9 @@ for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
         I_S_NE.append(I_VOLTS_SNE)
         Q_S_NE.append(Q_VOLTS_SNE)
         
-        MAG_SAMP =  np.abs((I_VOLTS_SE - I_VOLTS_SNE) + 1j * (Q_VOLTS_SE - Q_VOLTS_SNE))
-        PHASE_SAMP = np.angle((I_VOLTS_SE - I_VOLTS_SNE) + 1j * (Q_VOLTS_SE - Q_VOLTS_SNE))
+        MAG_SAMP = np.sqrt(np.square(I_S_E - I_S_NE)+np.square(Q_S_E - Q_S_NE))
+        PHASE_SAMP = np.arctan2(I_S_E-I_S_NE, Q_S_E-Q_S_NE)
+
         
         MAG.append(np.array(MAG_SAMP)-np.array(MAG_AIR[f_counter]))
         PHASE.append(np.array(PHASE_SAMP)-np.array(PHASE_AIR[f_counter]))
@@ -329,20 +342,60 @@ for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
     f_counter = f_counter+1    
     I_S_E_f.append(I_S_E)
     Q_S_E_f.append(Q_S_E)
-    I_S_NE_f.append(Q_S_NE)
+    I_S_NE_f.append(I_S_NE)
     Q_S_NE_f.append(Q_S_NE)
     MAG_f.append(MAG)
     PHASE_f.append(PHASE)
-    REF_COEF_f.append(Rcoef_MAT)
+    REF_COEF_f.append(REF_COEF)
     ACOUSTIC_IMP_f.append(ACOUSTIC_IMP)
     
 print("FINISHED LOADING SAMPLE FREQUENCY DATA with N FRAMES")
-
 #%%PLOTTING
 
-LIST_to_PLOT = ACOUSTIC_IMP_f
+LIST_to_PLOT = REF_COEF_f
 foldername = "Acoustic Impedance"
 geegah_hp.imgvid_plot_fsweep(LIST_to_PLOT, savedirname, foldername, 
              start_freq = f_start, end_freq = f_end,
              step_freq = f_delta ,
-             vmin = 0.3, vmax = 2)
+             vmin = 0.5, vmax = 2)
+
+
+#%%
+
+from matplotlib.colors import Normalize
+
+def plot_pixel_data_over_time(main_list, f_start, f_end, pixel_x, pixel_y):
+    num_frequencies = len(main_list)
+    num_frames = len(main_list[0])
+    
+    frequencies = np.linspace(f_start, f_end, num_frequencies)
+    cmap = plt.cm.cool  # or any other colormap
+    norm = Normalize(vmin=0, vmax=num_frames - 1)
+    
+    fig, ax = plt.subplots()
+    for frame_index in range(num_frames):
+        pixel_data = [main_list[freq_index][frame_index][pixel_x][pixel_y] for freq_index in range(num_frequencies)]
+        ax.plot(frequencies, pixel_data, color=cmap(norm(frame_index)), linewidth=2)
+    
+    ax.set_xlabel('Frequency')
+    ax.set_ylabel('Pixel Data Value')
+    ax.set_title(f'Pixel Data ({pixel_x}, {pixel_y}) vs Frequency over Time')
+    
+    # Create colorbar as a legend
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=ax)
+    cbar.set_label('Time Frame')
+
+    plt.show()
+
+# Example usage:
+# main_list = [Your data here]
+# plot_pixel_data_over_time(main_list, f_start=1800, f_end=1900, pixel_x=desired_x, pixel_y=desired_y)
+
+
+# Example usage:
+main_list = MAG_f
+plot_pixel_data_over_time(main_list, f_start=1820, f_end=1880, pixel_x=9, pixel_y=9)
+
+#%%
