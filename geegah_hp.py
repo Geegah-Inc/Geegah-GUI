@@ -12,7 +12,7 @@ def acqSingleFrameROI(xem, ADCNUM, file_name, c1 = 0, c2 = 127, c3 = 0, c4 = 127
     import math
     
     xem.Open()
-    xem.SelectADC(1)
+    xem.SelectADC(0)
     xem.SelectFakeADC(0)
     xem.EnablePgen(0)
     xem.ResetFifo()
