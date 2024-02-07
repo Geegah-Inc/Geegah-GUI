@@ -34,6 +34,34 @@ def acqSingleFrameROI(xem, ADCNUM, file_name, c1 = 0, c2 = 127, c3 = 0, c4 = 127
     return byte_data
 
 
+
+#FSWEEP ACQUISITION: 
+
+def acqSingleFrame_FSWEEP(xem, ADCNUM, file_name,):
+    import math
+    
+    xem.Open()
+    xem.SelectADC(0)
+    xem.SelectFakeADC(0)
+    xem.EnablePgen(0)
+    xem.ResetFifo()
+    xem.EnablePipeTransfer(1)
+    xem.StartAcq()
+    
+    # Set the array size to match the data, but make it a multiple of 1024
+    nbytes = 128*128*2*2
+    nbytes = 1024 * math.ceil(nbytes/1024)
+    byte_data = bytearray(nbytes)
+    nbytes = xem.GetPipeData(byte_data)
+    
+    #print ("GetPipeData returned ", nbytes)
+    f = open(file_name, "wb")
+    f.write(byte_data)
+    f.close()
+    #print("Wrote data to roi.dat")
+    xem.Close()
+    return byte_data
+
 #SETTINGS FUNCTIONS
 
 def reload_board(xem, frequency, roi_param):
