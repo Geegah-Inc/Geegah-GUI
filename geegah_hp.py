@@ -8,6 +8,8 @@ Created on Tue Apr 13 20:59:26 2021
 
 #ACQUISITION FUNCTIONS
 
+
+
 def acqSingleFrameROI(xem, ADCNUM, file_name, c1 = 0, c2 = 127, c3 = 0, c4 = 127):
     import math
     
@@ -576,4 +578,59 @@ def imgvid_plot_fsweep(matrix_list, directory, foldername,
 
         freq_title = freq_title + step_freq    
     print("Done generating images and video from frames")
+
+
+def calibrate_iq_signals(i, q):
+    # Calculate basic statistics: max, min, midpoint, and range for both signals
+    i_max, i_min = max(i), min(i)
+    q_max, q_min = max(q), min(q)
+
+    i_mid = (i_max + i_min) / 2
+    q_mid = (q_max + q_min) / 2
+
+    i_range = i_max - i_min
+    q_range = q_max - q_min
+
+    # Decide which signal to adjust based on range
+    adjust_i = q_range > i_range
+
+    # Calculate scale and shift
+    if adjust_i:
+        scale = q_range / i_range
+        shift = q_mid - i_mid
+        adjusted_i = [i_mid + (x - i_mid) * scale + shift for x in i]
+        adjusted_q = q
+    else:
+        scale = i_range / q_range
+        shift = i_mid - q_mid
+        adjusted_q = [q_mid + (x - q_mid) * scale + shift for x in q]
+        adjusted_i = i
+
+    # Calculate new statistics after adjustment
+    new_i_max, new_i_min = max(adjusted_i), min(adjusted_i)
+    new_q_max, new_q_min = max(adjusted_q), min(adjusted_q)
+    new_i_mid = (new_i_max + new_i_min) / 2
+    new_q_mid = (new_q_max + new_q_min) / 2
+
+    # Return adjusted signals and calibration parameters
+    calibration_params = {
+        "scale": scale,
+        "shift": shift,
+        "adjusted_i_mid": new_i_mid,
+        "adjusted_q_mid": new_q_mid
+    }
+    return adjusted_i, adjusted_q, calibration_params
+
+def find_largest_magnitude_frequency(i_adj, q_adj, freqs):
+    import numpy
+    # Calculate the absolute difference between I and Q
+    diff = np.abs(np.array(i_adj) - np.array(q_adj))
+    # Indices where I ~ Q
+    equal_indices = np.where(diff <= 0.01)[0]
+    # Find the frequency where the magnitude of I or Q is the largest
+    signal = np.maximum(np.abs(np.array(i_adj)[equal_indices]), np.abs(np.array(q_adj)[equal_indices]))
+    max_signal_index = equal_indices[np.argmax(signal)]
+    # Corresponding frequency
+    I_equal_q_freq = freqs[max_signal_index]
+    return I_equal_q_freq
 
