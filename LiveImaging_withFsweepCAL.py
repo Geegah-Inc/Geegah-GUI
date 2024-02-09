@@ -57,6 +57,11 @@ BLNE_save_dir = savedirname + "rawdata_baseline_no_echo/"
 if not os.path.exists(BLNE_save_dir):
     os.makedirs(BLNE_save_dir)
 
+#folder to store baseline with no echo files in 
+Fsweep_save_dir = savedirname + "Fsweep_CAL/"
+if not os.path.exists(Fsweep_save_dir):
+    os.makedirs(Fsweep_save_dir)
+
 print("Done Setting Up Folders")
 
 #%% Parameter selections
@@ -155,6 +160,71 @@ time.sleep(0.05)
 geegah_hp.configTiming(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
  
 print("Done initializing FPGA")
+
+#%%RUN A FREQUENCY SWEEP FOR CALIBRATION
+start_frequency = 1780
+end_frequency = 1860
+frequency_interval = 0.5
+
+#frequency sweep
+i,q,freqs = [],[],[]
+#plot setup
+plt.ion()
+fig, ax = plt.subplots()
+line1, = ax.plot([], [], label='I echo')  # Line for I values
+line2, = ax.plot([], [], label='Q echo')  # Line for Q values
+ax.set_xlabel('Frequency (MHz)')
+ax.set_ylabel('Echo (V)')
+ax.legend()
+# lims
+ax.set_xlim(start_frequency, end_frequency) 
+ax.set_ylim(1,3)  
+i_mat = []
+q_mat = []
+
+for freq in range(start_frequency*100,end_frequency*100,math.floor(frequency_interval*100)):
+    freq = freq/100
+    freqs.append(freq) 
+    
+    geegah_hp.configureVCO_10khz_fsweep(xem,freq,OUTEN,PSET) #SWITCH FREQUENCY
+    myf_meas_data = geegah_hp.acqSingleFrameCAL(xem, ADC_TO_USE)
+
+    geegah_hp.configureVCO_10khz_fsweep(xem,f_to_use,OUTEN,PSET)
+    geegah_hp.configTiming(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,
+                          RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
+    
+    myf_file_name_echo = Fsweep_save_dir + "Frequecyecho" + str(f_to_use) +".dat"
+    myf_data_echo = geegah_hp.acqSingleFrame_FSWEEP(xem, ADC_TO_USE, myf_file_name_echo)
+    time.sleep(0.1) 
+    geegah_hp.configTiming(xem,term_count_NE,TX_SWITCH_EN_SETTINGS_NE,PULSE_AND_SETTINGS_NE,
+                          RX_SWITCH_EN_SETTINGS_NE,GLOB_EN_SETTINGS_NE,LO_CTRL_SETTINGS_NE,ADC_CAP_SETTINGS_NE)
+    myf_file_name_noecho = Fsweep_save_dir + "Frequecynoecho" + str(f_to_use) +".dat"
+    myf_base_data_ne = geegah_hp.acqSingleFrame_FSWEEP(xem, ADC_TO_USE, myf_file_name_noecho)                     
+    time.sleep(0.1)
+    
+    I_ADC,Q_ADC,I_VOLTS,Q_VOLTS = geegah_hp.loadSavedRawDataFromBytes(myf_data_echo)
+    i.append(I_VOLTS[64,64])
+    q.append(Q_VOLTS[64,64])
+    i_mat.append(I_VOLTS)
+    q_mat.append(Q_VOLTS)
+    
+    # Set new data for the lines
+    line1.set_xdata(freqs)
+    line1.set_ydata(i)
+    line2.set_xdata(freqs)
+    line2.set_ydata(q)
+    
+    # Adjust the plot limits
+    ax.relim()
+    ax.autoscale_view()
+    # Redraw the plot
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+    plt.pause(0.01)
+        
+plt.ioff()  # Turn off interactive mode
+plt.show()     
+
 #%% ONLY RUN THIS AFTER THE FPGA CODE SETUP HAVE BEEN RUN ONCE
 geegah_hp.reload_board(xem, frequency, roi_param)
 #%% ACQUIRE BASELINE FRAMES: 
