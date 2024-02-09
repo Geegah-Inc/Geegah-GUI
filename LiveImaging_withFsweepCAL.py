@@ -181,7 +181,7 @@ ax.set_xlim(start_frequency, end_frequency)
 ax.set_ylim(1,3)  
 i_mat = []
 q_mat = []
-
+geegah_hp.reload_board(xem, frequency, [0,127,0,127]) #reset the ROI to 128x128
 for freq in range(start_frequency*100,end_frequency*100,math.floor(frequency_interval*100)):
     freq = freq/100
     freqs.append(freq) 
@@ -221,6 +221,17 @@ for freq in range(start_frequency*100,end_frequency*100,math.floor(frequency_int
         
 plt.ioff()  # Turn off interactive mode
 plt.show()     
+
+#%%
+# After adjusting the signals
+adjusted_i, adjusted_q, calibration_params = geegah_hp.calibrate_iq_signals(i, q)
+# f where I equals Q
+frequency_iq = geegah_hp.find_largest_magnitude_frequency(adjusted_i, adjusted_q, freqs)
+print("The frequency where I = Q is: "+str(frequency_iq) + "MHz")
+geegah_hp.configureVCO_10khz_fsweep(xem,frequency_iq,OUTEN,PSET) #SWITCH FREQUENCY
+geegah_hp.reload_board(xem, frequency, roi_param) #reset the ROI
+
+#%%
 
 #%% ONLY RUN THIS AFTER THE FPGA CODE SETUP HAVE BEEN RUN ONCE
 geegah_hp.reload_board(xem, frequency, roi_param)
