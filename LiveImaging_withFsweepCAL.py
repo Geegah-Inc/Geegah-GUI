@@ -187,9 +187,6 @@ for freq in range(start_frequency*100,end_frequency*100,math.floor(frequency_int
     freqs.append(freq) 
     
     geegah_hp.configureVCO_10khz_fsweep(xem,freq,OUTEN,PSET) #SWITCH FREQUENCY
-    myf_meas_data = geegah_hp.acqSingleFrameCAL(xem, ADC_TO_USE)
-
-    geegah_hp.configureVCO_10khz_fsweep(xem,f_to_use,OUTEN,PSET)
     geegah_hp.configTiming(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,
                           RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
     
