@@ -8,13 +8,11 @@ Created on Tue Apr 13 20:59:26 2021
 
 #ACQUISITION FUNCTIONS
 
-
-
 def acqSingleFrameROI(xem, ADCNUM, file_name, c1 = 0, c2 = 127, c3 = 0, c4 = 127):
     import math
-    
+
     xem.Open()
-    xem.SelectADC(0)
+    xem.SelectADC(ADCNUM)
     xem.SelectFakeADC(0)
     xem.EnablePgen(0)
     xem.ResetFifo()
@@ -43,7 +41,7 @@ def acqSingleFrame_FSWEEP(xem, ADCNUM, file_name,):
     import math
     
     xem.Open()
-    xem.SelectADC(0)
+    xem.SelectADC(ADCNUM)
     xem.SelectFakeADC(0)
     xem.EnablePgen(0)
     xem.ResetFifo()
@@ -64,26 +62,6 @@ def acqSingleFrame_FSWEEP(xem, ADCNUM, file_name,):
     xem.Close()
     return byte_data
 
-def acqSingleFrame_FSWEEP(xem, ADCNUM, file_name,):
-    xem.Open()
-    xem.SelectADC(0)
-    xem.SelectFakeADC(0)
-    xem.EnablePgen(0)
-    xem.ResetFifo()
-    xem.EnablePipeTransfer(1)
-    xem.StartAcq()
-    
-    # Set the array size to match the data, but make it a multiple of 1024
-    byte_data = bytearray(128*128*2*2)
-    nbytes = xem.GetPipeData(byte_data)
-    
-    #print ("GetPipeData returned ", byte_data)
-    f = open(file_name, "wb")
-    f.write(byte_data)
-    f.close()
-    xem.Close()
-    return byte_data
-
 
 #SETTINGS FUNCTIONS
 
@@ -95,12 +73,6 @@ def reload_board(xem, frequency, roi_param):
     xem.SetROI(roi_param[0],roi_param[1],roi_param[2],roi_param[3])
     configureVCO(xem,freq,OUTEN,PSET)
     xem.Close()
-
-
-
-
-
-
 
 
 
@@ -172,7 +144,29 @@ def loadSavedRawDataROI(file_name, c1 = 0, c2 = 128, r1 = 0, r2 = 128):
     return I_IMAGE_ADC, Q_IMAGE_ADC, I_IMAGE_VOLTS, Q_IMAGE_VOLTS
 
     
+def loadSavedRawDataFromBytes(bytes1):
+    import numpy as np
 
+    rows = 128
+    cols = 128
+    imgBytesI = np.zeros(rows*cols)
+    imgBytesQ = np.zeros(rows*cols)
+    
+    for row in range(rows):
+        for col in range(cols):
+            wi = row*cols + col  # Correction: use cols instead of rows
+            iwrd = (bytes1[4 * wi + 0] + 256*bytes1[4 * wi + 1])
+            qwrd = (bytes1[4 * wi + 2] + 256*bytes1[4 * wi + 3])
+            imgBytesI[wi] = iwrd
+            imgBytesQ[wi] = qwrd
+            
+    J_MYIMAGE_I = imgBytesI.reshape([rows, cols])
+    J_MYIMAGE_Q = imgBytesQ.reshape([rows, cols])
+    I_IMAGE_ADC = J_MYIMAGE_I / 16  # correct bit shift
+    Q_IMAGE_ADC = J_MYIMAGE_Q / 16  # correct bit shift
+    I_IMAGE_VOLTS = I_IMAGE_ADC * 1e-3  # convert to volts
+    Q_IMAGE_VOLTS = Q_IMAGE_ADC * 1e-3  # convert to volts
+    return I_IMAGE_ADC, Q_IMAGE_ADC, I_IMAGE_VOLTS, Q_IMAGE_VOLTS
 
 
 
@@ -622,7 +616,7 @@ def calibrate_iq_signals(i, q):
     return adjusted_i, adjusted_q, calibration_params
 
 def find_largest_magnitude_frequency(i_adj, q_adj, freqs):
-    import numpy
+    import numpy as np
     # Calculate the absolute difference between I and Q
     diff = np.abs(np.array(i_adj) - np.array(q_adj))
     # Indices where I ~ Q

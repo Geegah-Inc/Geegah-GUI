@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import geegah_hp
 import time
 import os
-
+import math
 #%% Make directories  to save files in
 foldername = "OIL_ALC"
 path = "C:/Users/anujb/Downloads"
@@ -67,13 +67,12 @@ print("Done Setting Up Folders")
 #%% Parameter selections
 
 liveplot = True #boolean for plotting images real-time, True or False, set this as True for live plotting
-frequency = 1853.5 #Pulse frequency in MHz, with resolution of 0.1 MHz
 
 #Selection of firing/receiving pixels, ROI 
 col_min = 0 #integer, 0<col_min<127
-col_max = 127 #integer, 0<col_max<127
+col_max = 20 #integer, 0<col_max<127
 row_min = 0 #integer, 0<row_min<127
-row_max = 127 #integer, 0<row_max<127
+row_max = 20 #integer, 0<row_max<127
 
 row_no = row_max - row_min
 col_no = col_max - col_min
@@ -100,6 +99,7 @@ print("Sys clock = %8.4f MHz" % xem.SysclkMHz())
 #setup vco
 #frequency in MHz with resolution of 0.1MHz
 #freq = 1883.7
+frequency = 1853.5 #Pulse frequency in MHz, with resolution of 0.1 MHz
 freq = frequency
 OUTEN = 1 #0 to disable, 1 to enable
 #Power setting: 0 for -4 dbm, 1 for -1 dbm (2 for +2dbm, 3 for +5 dbm but don't use)
@@ -151,7 +151,7 @@ geegah_hp.setAllPixSameDAC(xem,DAC_VOLTAGE) #comment this line out to skip setti
 
 #ADC to use
 #0 for gain of 5, 1 for no gain
-ADC_TO_USE = 0
+ADC_TO_USE = 1
 #Save settings to a file
 geegah_hp.saveSettingsFile(savedirname,bit_file_name,freq,OUTEN,PSET,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS,DAC_VOLTAGE,ADC_TO_USE)
 #close the XEM (will be reopened later)
@@ -178,15 +178,15 @@ ax.set_ylabel('Echo (V)')
 ax.legend()
 # lims
 ax.set_xlim(start_frequency, end_frequency) 
-ax.set_ylim(1,3)  
+ax.set_ylim(2.5,2.8)  
 i_mat = []
 q_mat = []
 geegah_hp.reload_board(xem, frequency, [0,127,0,127]) #reset the ROI to 128x128
 for freq in range(start_frequency*100,end_frequency*100,math.floor(frequency_interval*100)):
-    freq = freq/100
-    freqs.append(freq) 
+    f_to_use = freq/100
+    freqs.append(f_to_use) 
     
-    geegah_hp.configureVCO_10khz_fsweep(xem,freq,OUTEN,PSET) #SWITCH FREQUENCY
+    geegah_hp.configureVCO_10khz_fsweep(xem,f_to_use,OUTEN,PSET) #SWITCH FREQUENCY
     geegah_hp.configTiming(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,
                           RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
     
@@ -218,7 +218,6 @@ for freq in range(start_frequency*100,end_frequency*100,math.floor(frequency_int
     fig.canvas.draw()
     fig.canvas.flush_events()
     plt.pause(0.01)
-        
 plt.ioff()  # Turn off interactive mode
 plt.show()     
 
@@ -228,10 +227,22 @@ adjusted_i, adjusted_q, calibration_params = geegah_hp.calibrate_iq_signals(i, q
 # f where I equals Q
 frequency_iq = geegah_hp.find_largest_magnitude_frequency(adjusted_i, adjusted_q, freqs)
 print("The frequency where I = Q is: "+str(frequency_iq) + "MHz")
+
+# Plotting
+plt.plot(freqs, adjusted_i, label='I', linewidth=3)
+plt.plot(freqs, adjusted_q, label='Q', linewidth=3)
+
+# Highlight the point with the largest magnitude where I equals Q
+IQ_idx = freqs.index(frequency_iq)
+IQ_val = adjusted_i[IQ_idx]
+plt.scatter([frequency_iq],[IQ_val] , color='blue', s=100, zorder=5, label = 'I = Q frequency')
+
+plt.title("Adjusted I and Q vs frequency (64,64)")
+plt.ylabel("Adjusted Echo (V)")
+plt.legend()
+plt.show()
 geegah_hp.configureVCO_10khz_fsweep(xem,frequency_iq,OUTEN,PSET) #SWITCH FREQUENCY
 geegah_hp.reload_board(xem, frequency, roi_param) #reset the ROI
-
-#%%
 
 #%% ONLY RUN THIS AFTER THE FPGA CODE SETUP HAVE BEEN RUN ONCE
 geegah_hp.reload_board(xem, frequency, roi_param)
