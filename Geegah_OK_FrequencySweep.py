@@ -18,7 +18,7 @@ import math
 #%% Make directories  to save files in
 #top directory where files will be stored
  #change this to whatever you want your directory name to be
-savedirname = "C:/Users/anujb/Downloads/Drop_0_5muL_alcmixed/"
+savedirname = "C:/Users/anujb/Downloads/Rcoef_vs_FREQUENCY_test/"
 
 if not os.path.exists(savedirname):
     os.makedirs(savedirname)
@@ -53,14 +53,14 @@ print("Done Setting Up Folders")
 #Frequency sweep start, end, and delta
 #Frequencies in MHz
 f_start = 1820
-f_end = 1880
-f_delta = 1 #can be as low as 0.01
-num_frames =  30 #CHANGE THIS TO ACQUIRE MULTIPLE FRAMES at the same frequency. 
+f_end = 1850
+f_delta = 0.25 #can be as low as 0.01
+num_frames =  1 #CHANGE THIS TO ACQUIRE MULTIPLE FRAMES at the same frequency. 
 #Selection of firing/receiving pixels, ROI 
 col_min = 0 #integer, 0<col_min<127
-col_max = 15 #integer, 0<col_max<127
+col_max = 127 #integer, 0<col_max<127
 row_min = 0#integer, 0<row_min<127
-row_max = 15 #integer, 0<row_max<127
+row_max = 127 #integer, 0<row_max<127
 row_no = row_max - row_min
 col_no = col_max - col_min
 roi_param = [col_min, col_max, row_min, row_max]
@@ -98,7 +98,6 @@ term_count = 83
 #this is the start and the end rows and column numbers
 xem.SinglePixelMode(False)
 
-
 xem.SetROI(col_min,col_max,row_min,row_max)
 col_min = xem.GetRegField(xem.roi_start_col)
 col_max = xem.GetRegField(xem.roi_end_col)
@@ -131,7 +130,6 @@ GLOB_EN_SETTINGS_NE = (1, 71+NE_del, 1023, 71+NE_del, 1023)
 LO_CTRL_SETTINGS_NE = (1, 1023, 1023, 42, 1023)
 ADC_CAP_SETTINGS_NE = (0, 80+NE_del, 81+NE_del, 80+NE_del, 81+NE_del)   # ADC_CAPTURE #80 81
 
-
 #set all DACs to the same voltage
 #2.5V  works well
 #don't go above 2.9V, probably best not to go below 1V
@@ -140,7 +138,7 @@ geegah_hp.setAllPixSameDAC(xem,DAC_VOLTAGE) #comment this line out to skip setti
 
 #ADC to use
 #0 for gain of 5, 1 for no gain
-ADC_TO_USE = 0
+ADC_TO_USE = 1
 #Save settings to a file
 geegah_hp.saveSettingsFile(savedirname,bit_file_name,freq,OUTEN,PSET,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS,DAC_VOLTAGE,ADC_TO_USE)
 #close the XEM (will be reopened later)
@@ -154,17 +152,14 @@ print("Done initializing FPGA")
 geegah_hp.reload_board(xem, f_start, roi_param)
 #%%ACQUIRE BASELINE FRAMES FOR DIFFERENCE FREQUENCIES:
 
-xem.Open()
-xem.SelectADC(0)
-xem.SelectFakeADC(0)
-xem.EnablePgen(0)
-xem.Close()
 for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
     
     f_to_use = myf/100
-    geegah_hp.configTiming(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,
+    xem.Open()
+    geegah_hp.configTiming_fsweep(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,
                           RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
-    geegah_hp.configureVCO_10khz_fsweep(xem,f_to_use,OUTEN,PSET)
+    geegah_hp.configureVCO_10khz(xem,f_to_use,OUTEN,PSET)
+    xem.Close()
     myf_base_file_name = basedata_save_dir + "basefreqsweep" + str(myf) +".dat"
     myf_base_data = geegah_hp.acqSingleFrameROI(xem, ADC_TO_USE, myf_base_file_name,
                                             roi_param[0], 
@@ -173,8 +168,10 @@ for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
                                             roi_param[3])
   
     time.sleep(0.1) 
-    geegah_hp.configTiming(xem,term_count_NE,TX_SWITCH_EN_SETTINGS_NE,PULSE_AND_SETTINGS_NE,
+    xem.Open()
+    geegah_hp.configTiming_fsweep(xem,term_count_NE,TX_SWITCH_EN_SETTINGS_NE,PULSE_AND_SETTINGS_NE,
                           RX_SWITCH_EN_SETTINGS_NE,GLOB_EN_SETTINGS_NE,LO_CTRL_SETTINGS_NE,ADC_CAP_SETTINGS_NE)
+    xem.Close()
     myf_base_file_name_NE = BLNE_save_dir + "basefreqsweepne" + str(myf) +".dat"
     myf_base_data_ne = geegah_hp.acqSingleFrameROI(xem, ADC_TO_USE, myf_base_file_name_NE,
                                             roi_param[0], 
@@ -195,18 +192,16 @@ print("Done Sweeping Baseline Frequencies, echo and no-echo")
 
 
 time_i = time.time()
-xem.Open()
-xem.SelectADC(0)
-xem.SelectFakeADC(0)
-xem.EnablePgen(0)
-xem.Close()
 for cf in range(num_frames):
     for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
   
         f_to_use = myf/100
+        
+        xem.Open()
         myf_data_file_name = rawdata_save_dir + "frame_" + str(cf) + "_freq_"+ str(myf) +".dat"
-        geegah_hp.configTiming(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
-        geegah_hp.configureVCO_10khz_fsweep(xem,f_to_use,OUTEN,PSET)
+        geegah_hp.configTiming_fsweep(xem,term_count,TX_SWITCH_EN_SETTINGS,PULSE_AND_SETTINGS,RX_SWITCH_EN_SETTINGS,GLOB_EN_SETTINGS,LO_CTRL_SETTINGS,ADC_CAP_SETTINGS)
+        geegah_hp.configureVCO_10khz(xem,f_to_use,OUTEN,PSET)
+        xem.Close()
         myf_meas_data = geegah_hp.acqSingleFrameROI(xem, ADC_TO_USE, myf_data_file_name,
                                                 roi_param[0], 
                                                 roi_param[1], 
@@ -214,8 +209,10 @@ for cf in range(num_frames):
                                                 roi_param[3])
         
         time.sleep(0.1)
+        xem.Open()
         myf_data_file_name_ne = rawdata_ne_save_dir + "frame_" + str(cf) + "_freq_"+ str(myf) +".dat"
-        geegah_hp.configTiming(xem,term_count_NE,TX_SWITCH_EN_SETTINGS_NE,PULSE_AND_SETTINGS_NE,RX_SWITCH_EN_SETTINGS_NE,GLOB_EN_SETTINGS_NE,LO_CTRL_SETTINGS_NE,ADC_CAP_SETTINGS_NE)
+        geegah_hp.configTiming_fsweep(xem,term_count_NE,TX_SWITCH_EN_SETTINGS_NE,PULSE_AND_SETTINGS_NE,RX_SWITCH_EN_SETTINGS_NE,GLOB_EN_SETTINGS_NE,LO_CTRL_SETTINGS_NE,ADC_CAP_SETTINGS_NE)
+        xem.Close()
         myf_meas_data_ne = geegah_hp.acqSingleFrameROI(xem, ADC_TO_USE, myf_data_file_name_ne,
                                                 roi_param[0], 
                                                 roi_param[1], 
@@ -223,9 +220,7 @@ for cf in range(num_frames):
                                                 roi_param[3])
         time.sleep(0.1)
         
-        
-        
-        #print("Currently at frequency: ", myf, " MHz", "frame ", cf)
+        print("Currently at frequency: ", myf, " MHz", "frame ", cf)
     print("Finished frame # ", cf)
 time_f = time.time()
 total_frames = num_frames*((f_end-f_start)/f_delta)
@@ -240,14 +235,14 @@ savedirname = savedirname
 #Frequency sweep start, end, and delta
 #Frequencies in MHz
 f_start = 1820
-f_end = 1880
-f_delta = 1 #can be as low as 0.01
-num_frames =  100#CHANGE THIS TO ACQUIRE MULTIPLE FRAMES at the same frequency. 
+f_end = 1850
+f_delta = 0.25 #can be as low as 0.01
+num_frames =  1#CHANGE THIS TO ACQUIRE MULTIPLE FRAMES at the same frequency. 
 #Selection of firing/receiving pixels, ROI 
 col_min = 0 #integer, 0<col_min<127
-col_max = 15 #integer, 0<col_max<127
+col_max = 127 #integer, 0<col_max<127
 row_min = 0 #integer, 0<row_min<127
-row_max = 15 #integer, 0<row_max<127
+row_max = 127 #integer, 0<row_max<127
 row_no = row_max - row_min
 col_no = col_max - col_min
 roi_param = [col_min, col_max, row_min, row_max]
@@ -259,6 +254,7 @@ I_A_NE = []#In phase, baseline, NoEcho
 Q_A_NE = []#Out of phase, baseline,No Echo
 MAG_A = []
 PHASE_A = []
+
 for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
 
     AE_filename = savedirname+"baseline/"+"basefreqsweep" + str(myf) + ".dat"
@@ -278,8 +274,8 @@ for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
     I_A_NE.append(I_VOLTS_ANE)
     Q_A_NE.append(Q_VOLTS_ANE)
     
-    MAG_AIR = np.sqrt(np.square(I_A_E - I_A_NE)+np.square(Q_A_E - Q_A_NE))
-    PHASE_AIR = np.arctan2(I_A_E-I_A_NE, Q_A_E-Q_A_NE)
+    MAG_AIR = np.sqrt(np.square(I_VOLTS_AE - I_VOLTS_ANE)+np.square(Q_VOLTS_AE - Q_VOLTS_ANE))
+    PHASE_AIR = np.arctan2(I_VOLTS_AE - I_VOLTS_ANE, Q_VOLTS_AE - Q_VOLTS_ANE)
 
     MAG_A.append(MAG_AIR)
     PHASE_A.append(PHASE_AIR)
@@ -298,6 +294,10 @@ MAG_f = []
 PHASE_f = []
 REF_COEF_f = []
 ACOUSTIC_IMP_f = []
+I_baseadj_f = []
+Q_baseadj_f = []
+f_counter = 0
+
 for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
     I_S_E = [] #In phase, sample, Echo
     Q_S_E = []#Out of phase, sample, Echo
@@ -308,7 +308,10 @@ for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
     PHASE = []
     REF_COEF = []
     ACOUSTIC_IMP = []
-    f_counter = 0
+    
+    I_del = []
+    Q_del = []
+    
     for frames in range(num_frames):
 
         ME_filename = savedirname+"rawdata/"+"frame_"+str(frames)+"_freq_"+str(myf)+".dat"
@@ -328,9 +331,11 @@ for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
         I_S_NE.append(I_VOLTS_SNE)
         Q_S_NE.append(Q_VOLTS_SNE)
         
-        MAG_SAMP = np.sqrt(np.square(I_S_E - I_S_NE)+np.square(Q_S_E - Q_S_NE))
-        PHASE_SAMP = np.arctan2(I_S_E-I_S_NE, Q_S_E-Q_S_NE)
-
+        I_del.append(np.array(I_VOLTS_SE) - np.array(I_A_E[f_counter]))
+        Q_del.append(np.array(Q_VOLTS_SE) - np.array(Q_A_E[f_counter]))
+        
+        MAG_SAMP = np.sqrt(np.square(I_VOLTS_SE - I_VOLTS_SNE)+np.square(Q_VOLTS_SE - Q_VOLTS_SNE))
+        PHASE_SAMP = np.arctan2(I_VOLTS_SE - I_VOLTS_SNE, Q_VOLTS_SE - Q_VOLTS_SNE)
         
         MAG.append(np.array(MAG_SAMP)-np.array(MAG_AIR[f_counter]))
         PHASE.append(np.array(PHASE_SAMP)-np.array(PHASE_AIR[f_counter]))
@@ -344,6 +349,8 @@ for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
     Q_S_E_f.append(Q_S_E)
     I_S_NE_f.append(I_S_NE)
     Q_S_NE_f.append(Q_S_NE)
+    I_baseadj_f.append(I_del)
+    Q_baseadj_f.append(Q_del)
     MAG_f.append(MAG)
     PHASE_f.append(PHASE)
     REF_COEF_f.append(REF_COEF)
@@ -352,13 +359,12 @@ for myf in range(f_start*100,f_end*100,math.floor(f_delta*100)):
 print("FINISHED LOADING SAMPLE FREQUENCY DATA with N FRAMES")
 #%%PLOTTING
 
-LIST_to_PLOT = REF_COEF_f
-foldername = "Acoustic Impedance"
+LIST_to_PLOT = Q_baseadj_f
+foldername = "Q del"
 geegah_hp.imgvid_plot_fsweep(LIST_to_PLOT, savedirname, foldername, 
              start_freq = f_start, end_freq = f_end,
              step_freq = f_delta ,
-             vmin = 0.5, vmax = 2)
-
+             vmin = -0.2, vmax = 0.2)
 
 #%%
 
@@ -371,7 +377,7 @@ def plot_pixel_data_over_time(main_list, f_start, f_end, pixel_x, pixel_y):
     frequencies = np.linspace(f_start, f_end, num_frequencies)
     cmap = plt.cm.cool  # or any other colormap
     norm = Normalize(vmin=0, vmax=num_frames - 1)
-    
+
     fig, ax = plt.subplots()
     for frame_index in range(num_frames):
         pixel_data = [main_list[freq_index][frame_index][pixel_x][pixel_y] for freq_index in range(num_frequencies)]
@@ -388,14 +394,65 @@ def plot_pixel_data_over_time(main_list, f_start, f_end, pixel_x, pixel_y):
     cbar.set_label('Time Frame')
 
     plt.show()
+    return pixel_data
 
 # Example usage:
-# main_list = [Your data here]
-# plot_pixel_data_over_time(main_list, f_start=1800, f_end=1900, pixel_x=desired_x, pixel_y=desired_y)
-
-
-# Example usage:
-main_list = MAG_f
-plot_pixel_data_over_time(main_list, f_start=1820, f_end=1880, pixel_x=9, pixel_y=9)
+main_list = I_S_E_f
+plot_pixel_data_over_time(main_list, f_start=1820, f_end=1850, pixel_x=30, pixel_y=20)
 
 #%%
+
+listn = I_A_NE
+vals = []
+for jj in listn:
+    vals.append(jj[10,10])
+    
+listn0 = Q_A_NE
+vals0 = []
+for jj in listn0:
+    vals0.append(jj[10,10])
+    
+listnjj = I_A_E
+valsjj = []
+for jj in listnjj:
+    valsjj.append(jj[10,10])
+    
+listn0kk = Q_A_E
+vals0kk = []
+for jj in listn0kk:
+    vals0kk.append(jj[10,10])
+    
+listn2 = Q_S_NE_f
+vals2 = []
+for jj in listn2:
+    for kk in jj:
+        vals2.append(kk[10,10])
+        
+listn3 = I_S_NE_f
+vals3 = []
+for jj in listn3:
+    for kk in jj:
+        vals3.append(kk[10,10])
+        
+listn23 = Q_S_E_f
+vals23 = []
+for jj in listn23:
+    for kk in jj:
+        vals23.append(kk[10,10])
+        
+listn344 = I_S_E_f
+vals344 = []
+for jj in listn344:
+    for kk in jj:
+        vals344.append(kk[10,10])
+
+#%%
+plt.plot(valsjj, label = 'AIR I E')
+plt.plot(vals0kk, label = 'AIR Q E')
+plt.plot(vals, label = 'AIR I NE')
+plt.plot(vals0, label = 'AIR Q NE')
+plt.plot(vals344, label = 'SAMPLE I E')
+plt.plot(vals23, label = 'SAMPLE Q E')
+plt.plot(vals3, label = 'SAMPLE I NE')
+plt.plot(vals2, label = 'SAMPLE Q NE')
+plt.legend()
